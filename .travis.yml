@@ -3,6 +3,8 @@ language: ge
 services:
   - docker
 
-script:
+install:
   - docker build -t test . -f Dockerfile.test
+
+script:
   - docker run test:latest
