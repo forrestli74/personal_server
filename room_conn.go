@@ -7,19 +7,28 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
-	tmp "github.com/lijiaqigreat/wsrpcgo/protobuf"
+	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
+/*
+RoomConnState ...
+*/
 type RoomConnState struct {
 	ch <-chan []byte
 	ws *websocket.Conn
 }
 
+/*
+RoomConn ...
+*/
 type RoomConn struct {
 	id    string
 	state RoomConnState
 }
 
+/*
+Connect ...
+*/
 func (rc *RoomConn) Connect(rs *RoomServer, w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

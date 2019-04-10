@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	tmp "github.com/lijiaqigreat/wsrpcgo/protobuf"
+	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
 var (

@@ -5,7 +5,7 @@ import (
 	//"github.com/gorilla/websocket"
 	"testing"
 
-	tmp "github.com/lijiaqigreat/wsrpcgo/protobuf"
+	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

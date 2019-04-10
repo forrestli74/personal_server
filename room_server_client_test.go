@@ -8,7 +8,7 @@ import (
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
-	tmp "github.com/lijiaqigreat/wsrpcgo/protobuf"
+	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

@@ -11,3 +11,6 @@ protobuf/%.pb.go: protobuf/%.proto
 .PHONY: clean
 clean:
 	rm -f protobuf/*.pb.go
+
+install:
+	go get ${gobuild_args} ./...

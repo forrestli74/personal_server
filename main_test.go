@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	proto "github.com/golang/protobuf/proto"
-	tmp "github.com/lijiaqigreat/wsrpcgo/protobuf"
+	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
 // func TestRoomServer_ConnectMs_Connects(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	proto "github.com/golang/protobuf/proto"
-	tmp "github.com/lijiaqigreat/wsrpcgo/protobuf"
+	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
 /*
