@@ -14,12 +14,3 @@ ADD . .
 RUN make proto
 RUN go get -t ./...
 CMD ["go", "test"]
-
-# FROM alpine
-# RUN adduser -S -D -H -h /app appuser
-# USER appuser
-# COPY --from=builder /build/main /app/
-# COPY --from=builder /build/server.* /app/
-# COPY --from=builder /build/protobuf/command.pb.go /app/
-# WORKDIR /app
-# CMD [""]
