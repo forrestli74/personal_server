@@ -1,6 +1,8 @@
 FROM golang:1 AS builder
 ARG repo_slug=lijiaqigreat/personal_server
+ENV CGO_ENABLED=0
 ENV BUILD_DIR=$GOPATH/src/github.com/$repo_slug
+
 RUN mkdir -p $BUILD_DIR
 RUN ln -s $BUILD_DIR /build
 WORKDIR $BUILD_DIR
@@ -16,10 +18,9 @@ RUN make proto
 RUN go get ./...
 RUN go build -o main .
 
-FROM alpine
-RUN adduser -S -D -H -h /app appuser
-USER appuser
+FROM scratch
 COPY --from=builder /build/main /app/
-COPY --from=builder /build/server.* /app/
+COPY --from=builder /build/server.key /app/
+COPY --from=builder /build/server.cert /app/
 WORKDIR /app
 CMD ["./main"]
