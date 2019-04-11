@@ -7,18 +7,6 @@ import (
 	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
-// func TestRoomServer_ConnectMs_Connects(t *testing.T) {
-// 	rc := NewRoomServer()
-// 	rc.SetConnection(RoomConnection{
-// 		id: "id",
-// 		secret: "secret",
-// 	})
-// 	err := rc.ConnectWs("id", "secret", nil)
-// 	if(err != nil) {
-// 		t.Errorf(err.Error())
-// 	}
-// }
-
 func TestBasicProto(t *testing.T) {
 	command := &tmp.Command{}
 	data, _ := proto.Marshal(command)

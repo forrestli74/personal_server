@@ -63,12 +63,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	roomServer := NewRoomServer(nil)
-	twirpHandler := tmp.NewRoomServiceServer(roomServer, nil)
+	// roomServer := NewRoomServer(nil)
+
+	roomHub := NewRoomHub()
+	twirpHandler := tmp.NewRoomServiceServer(roomHub, nil)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", serveHome)
 	mux.Handle(twirpHandler.PathPrefix(), twirpHandler)
-	mux.Handle("/ws", roomServer.GetHandler())
+	mux.Handle("/ws", roomHub.GetHandler())
 	fmt.Printf("now serving %s\n", *addr)
 	log.Fatal(http.ListenAndServeTLS(*addr, "server.cert", "server.key", mux))
 }

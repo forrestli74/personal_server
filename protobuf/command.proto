@@ -24,17 +24,28 @@ message WriterCommand {
 
 service RoomService {
   /* rpc debug(DebugRequest) returns (DebugResponse) {} */
-  /* rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse) {} */
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse) {}
+  rpc DeleteRoom(DeleteRoomRequest) returns (DeleteRoomResponse) {}
   rpc AddWriter(AddWriterRequest) returns (AddWriterResponse) {}
 }
 
 message CreateRoomRequest {
+  string room_id = 1;
+  RoomSetting room_setting = 2;
 }
 
 message CreateRoomResponse {
 }
 
+message DeleteRoomRequest {
+  string room_id = 1;
+}
+
+message DeleteRoomResponse {
+}
+
 message AddWriterRequest {
+  string room_id = 2;
   repeated string proposed_ids = 1;
 }
 

@@ -1,9 +1,9 @@
 package main
 
 import (
-	proto "github.com/golang/protobuf/proto"
-	//"github.com/gorilla/websocket"
 	"testing"
+
+	proto "github.com/golang/protobuf/proto"
 
 	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ type RoomServerSuite struct {
 	suite.Suite
 }
 
-func (s *RoomServerClientSuite) TestSendsTick() {
+func (s *RoomServerSuite) TestSendsTick() {
 	size := 2
 	setting := &tmp.RoomSetting{
 		TickSetting: &tmp.TickSetting{

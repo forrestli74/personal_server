@@ -18,21 +18,7 @@ type RoomServer struct {
 	setting        *tmp.RoomSetting
 	connectionByID map[string]*RoomConn
 	history        History
-	alive          bool
-}
-
-/*
-Debug ...
-*/
-func (rs *RoomServer) Debug(c context.Context, request *tmp.DebugRequest) (*tmp.DebugResponse, error) {
-	return nil, nil
-}
-
-/*
-CreateRoom ...
-*/
-func (rs *RoomServer) CreateRoom(c context.Context, request *tmp.CreateRoomRequest) (*tmp.CreateRoomResponse, error) {
-	return nil, nil
+	closed         bool
 }
 
 /*
@@ -66,7 +52,14 @@ func (rs *RoomServer) GetHandler() http.Handler {
 Close ...
 */
 func (rs *RoomServer) Close() {
-	rs.alive = false
+	rs.closed = true
+}
+
+/*
+IsClosed ...
+*/
+func (rs *RoomServer) IsClosed() bool {
+	return rs.closed
 }
 
 func (rs *RoomServer) appendRawCommand(command *tmp.Command) {
@@ -82,7 +75,7 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 		connectionByID: make(map[string]*RoomConn),
 		history:        CreateHistory(),
 		setting:        setting,
-		alive:          true,
+		closed:         false,
 	}
 	period := setting.GetTickSetting().GetFrequencyMillis()
 	if period != 0 {
@@ -90,7 +83,7 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 		go func() {
 			randomBuffer := make([]byte, setting.GetTickSetting().GetSize())
 			for range ticker.C {
-				if !rs.alive {
+				if rs.closed {
 					break
 				}
 				rand.Read(randomBuffer)
