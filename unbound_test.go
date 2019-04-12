@@ -1,12 +1,12 @@
 package main
 
 import (
-	"testing"
 	"sync"
+	"testing"
 	"time"
 )
 
-func TestMakeInfiniteNoPause(t *testing.T) {
+func TestMakeInfinitePause(t *testing.T) {
 	in, out := Makelnfinite2()
 	lastVal := -1
 	var wg sync.WaitGroup
@@ -21,9 +21,11 @@ func TestMakeInfiniteNoPause(t *testing.T) {
 		}
 		wg.Done()
 	}()
-	for i:=0;i<100;i++ {
-		time.Sleep(1*time.Millisecond)
-		in<-i
+
+	time.Sleep(1 * time.Millisecond)
+
+	for i := 0; i < 100; i++ {
+		in <- i
 	}
 	close(in)
 	wg.Wait()
@@ -42,8 +44,8 @@ func Makelnfinite2() (chan<- interface{}, <-chan interface{}) {
 
 	go func() {
 		for in != nil {
-			v, ok := <- in
-			if(!ok) {
+			v, ok := <-in
+			if !ok {
 				in = nil
 				im.Unlock()
 			} else {
@@ -67,7 +69,7 @@ func Makelnfinite2() (chan<- interface{}, <-chan interface{}) {
 					index++
 				} else {
 					close(out)
-					break;
+					break
 				}
 			}
 		}
@@ -108,4 +110,3 @@ func Makelnfinite() (chan<- interface{}, <-chan interface{}) {
 	}()
 	return in, out
 }
-

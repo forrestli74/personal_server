@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	addr    = flag.String("addr", ":8080", "http service address")
-	cmdPath string
+	addr     = flag.String("addr", ":8080", "http service address")
+	useHTTPS = flag.Bool("https", false, "whether to use https")
 )
 
 const (
@@ -59,11 +59,6 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	flag.Parse()
-	var err error
-	if err != nil {
-		log.Fatal(err)
-	}
-	// roomServer := NewRoomServer(nil)
 
 	roomHub := NewRoomHub()
 	twirpHandler := tmp.NewRoomServiceServer(roomHub, nil)
@@ -72,5 +67,9 @@ func main() {
 	mux.Handle(twirpHandler.PathPrefix(), twirpHandler)
 	mux.Handle("/ws", roomHub.GetHandler())
 	fmt.Printf("now serving %s\n", *addr)
-	log.Fatal(http.ListenAndServeTLS(*addr, "server.cert", "server.key", mux))
+	if *useHTTPS {
+		log.Fatal(http.ListenAndServeTLS(*addr, "server.cert", "server.key", mux))
+	} else {
+		log.Fatal(http.ListenAndServe(*addr, mux))
+	}
 }
