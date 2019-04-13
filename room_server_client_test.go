@@ -35,9 +35,6 @@ type RoomServerClientSuite struct {
 }
 
 func (s *RoomServerClientSuite) AddAndConnectID(id string) (*websocket.Conn, *http.Response, error) {
-	s.rs.AddWriter(nil, &tmp.AddWriterRequest{
-		ProposedIds: []string{id},
-	})
 	url := makeWsProto(s.server.URL + "?id=" + id)
 	return s.dialer.Dial(url, nil)
 }
@@ -59,8 +56,9 @@ func (s *RoomServerClientSuite) TestGet400WhenMissingId() {
 	assert.Equal(s.T(), response.StatusCode, http.StatusBadRequest)
 }
 
-func (s *RoomServerClientSuite) TestGet400WhenIdNotFound() {
-	url := makeWsProto(s.server.URL + "?id=not_found")
+func (s *RoomServerClientSuite) TestGet400WhenIdExists() {
+	url := makeWsProto(s.server.URL + "?id=id")
+	s.dialer.Dial(url, nil)
 	_, response, _ := s.dialer.Dial(url, nil)
 	assert.Equal(s.T(), response.StatusCode, http.StatusBadRequest)
 }
@@ -76,6 +74,23 @@ func (s *RoomServerClientSuite) TestSendsIdCommandOnJoin() {
 		Command: &tmp.Command_IdCommand{
 			IdCommand: &tmp.IdCommand{
 				NewId: id,
+			},
+		},
+	})
+}
+
+func (s *RoomServerClientSuite) TestSendsIdCommandOnLeave() {
+	id := "test"
+	ws, _, _ := s.AddAndConnectID(id)
+	ws.Close()
+	rawCommand := <-s.rs.history.CreateChan(1)
+	actual := new(tmp.Command)
+	proto.Unmarshal(rawCommand, actual)
+
+	assertProtoEqual(s.T(), actual, &tmp.Command{
+		Command: &tmp.Command_IdCommand{
+			IdCommand: &tmp.IdCommand{
+				OldId: id,
 			},
 		},
 	})

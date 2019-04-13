@@ -111,9 +111,11 @@ func (rsh roomServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing id", http.StatusBadRequest)
 		return
 	}
-	if rc, ok := rsh.rs.connectionByID[id]; ok {
-		rc.Connect(rsh.rs, w, r)
-	} else {
-		http.Error(w, "Id not found", http.StatusBadRequest)
+	rc, ok := rsh.rs.connectionByID[id]
+	if !ok {
+		rc = &RoomConn{rs: rsh.rs, id: id}
+		rsh.rs.connectionByID[id] = rc
 	}
+
+	rc.Connect(w, r)
 }
