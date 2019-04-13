@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -31,13 +29,15 @@ Close ...
 */
 func (rc *RoomConn) Close() {
 	rc.state.ws.Close()
-	rc.rs.appendRawCommand(&tmp.Command{
-		Command: &tmp.Command_IdCommand{
-			IdCommand: &tmp.IdCommand{
-				OldId: rc.id,
+	if rc.id != "" {
+		rc.rs.appendRawCommand(&tmp.Command{
+			Command: &tmp.Command_IdCommand{
+				IdCommand: &tmp.IdCommand{
+					OldId: rc.id,
+				},
 			},
-		},
-	})
+		})
+	}
 }
 
 /*
@@ -49,40 +49,42 @@ func (rc *RoomConn) Connect(w http.ResponseWriter, r *http.Request) error {
 	}
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("upgrade:", err)
 		return err
 	}
 	rc.state.ws = ws
 
-	rc.rs.appendRawCommand(&tmp.Command{
-		Command: &tmp.Command_IdCommand{
-			IdCommand: &tmp.IdCommand{
-				NewId: rc.id,
+	if rc.id != "" {
+		rc.rs.appendRawCommand(&tmp.Command{
+			Command: &tmp.Command_IdCommand{
+				IdCommand: &tmp.IdCommand{
+					NewId: rc.id,
+				},
 			},
-		},
-	})
+		})
+	}
 
 	commandChan := rc.rs.history.CreateChan(0)
 
 	// write ws to history
-	go func() {
-		defer rc.Close()
-		for {
-			_, message, err := ws.ReadMessage()
-			if err != nil {
-				fmt.Println(err)
-				break
-			}
-			rc.rs.appendRawCommand(&tmp.Command{
-				Command: &tmp.Command_WriterCommand{
-					WriterCommand: &tmp.WriterCommand{
-						Id:      rc.id,
-						Command: message,
+	if rc.id != "" {
+		go func() {
+			defer rc.Close()
+			for {
+				_, message, err := ws.ReadMessage()
+				if err != nil {
+					break
+				}
+				rc.rs.appendRawCommand(&tmp.Command{
+					Command: &tmp.Command_WriterCommand{
+						WriterCommand: &tmp.WriterCommand{
+							Id:      rc.id,
+							Command: message,
+						},
 					},
-				},
-			})
-		}
-	}()
+				})
+			}
+		}()
+	}
 
 	// write history to ws
 	go func() {

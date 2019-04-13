@@ -50,10 +50,25 @@ func (s *RoomServerClientSuite) TearDownTest() {
 	s.rs.Close()
 }
 
-func (s *RoomServerClientSuite) TestGet400WhenMissingId() {
-	url := makeWsProto(s.server.URL)
-	_, response, _ := s.dialer.Dial(url, nil)
-	assert.Equal(s.T(), response.StatusCode, http.StatusBadRequest)
+func (s *RoomServerClientSuite) TestIgnoresWriteWhenMissingId() {
+	ws, _, _ := s.AddAndConnectID("")
+	message := []byte("hello")
+	ws.WriteMessage(websocket.BinaryMessage, message)
+
+	id := "id"
+	s.AddAndConnectID(id)
+
+	_, wsMessage, _ := ws.ReadMessage()
+
+	actual := new(tmp.Command)
+	proto.Unmarshal(wsMessage, actual)
+	assertProtoEqual(s.T(), actual, &tmp.Command{
+		Command: &tmp.Command_IdCommand{
+			IdCommand: &tmp.IdCommand{
+				NewId: id,
+			},
+		},
+	})
 }
 
 func (s *RoomServerClientSuite) TestGet400WhenIdExists() {

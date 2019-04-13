@@ -50,17 +50,6 @@ func (rh *RoomHub) DeleteRoom(c context.Context, request *tmp.DeleteRoomRequest)
 	return new(tmp.DeleteRoomResponse), nil
 }
 
-/*
-AddWriter ...
-*/
-func (rh *RoomHub) AddWriter(c context.Context, request *tmp.AddWriterRequest) (*tmp.AddWriterResponse, error) {
-	roomServer, ok := rh.roomByID[request.RoomId]
-	if !ok {
-		return nil, fmt.Errorf("room not found")
-	}
-	return roomServer.AddWriter(c, request)
-}
-
 func (rh *RoomHub) Close() {
 	for _, v := range rh.roomByID {
 		v.Close()

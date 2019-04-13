@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"math/rand"
 	"net/http"
 	"time"
@@ -19,26 +18,6 @@ type RoomServer struct {
 	connectionByID map[string]*RoomConn
 	history        History
 	closed         bool
-}
-
-/*
-AddWriter ...
-*/
-func (rs *RoomServer) AddWriter(c context.Context, request *tmp.AddWriterRequest) (*tmp.AddWriterResponse, error) {
-	for _, id := range request.ProposedIds {
-		if _, ok := rs.connectionByID[id]; !ok {
-			rs.connectionByID[id] = &RoomConn{id: id}
-			rs.appendRawCommand(&tmp.Command{
-				Command: &tmp.Command_IdCommand{
-					IdCommand: &tmp.IdCommand{
-						NewId: id,
-					},
-				},
-			})
-			return &tmp.AddWriterResponse{Id: id}, nil
-		}
-	}
-	return &tmp.AddWriterResponse{}, nil
 }
 
 /*
@@ -107,12 +86,10 @@ type roomServerHandler struct {
 func (rsh roomServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "Missing id", http.StatusBadRequest)
-		return
-	}
 	rc, ok := rsh.rs.connectionByID[id]
-	if !ok {
+	if id == "" {
+		rc = &RoomConn{rs: rsh.rs}
+	} else if !ok {
 		rc = &RoomConn{rs: rsh.rs, id: id}
 		rsh.rs.connectionByID[id] = rc
 	}

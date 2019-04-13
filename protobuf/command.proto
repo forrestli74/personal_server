@@ -26,7 +26,6 @@ service RoomService {
   /* rpc debug(DebugRequest) returns (DebugResponse) {} */
   rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse) {}
   rpc DeleteRoom(DeleteRoomRequest) returns (DeleteRoomResponse) {}
-  rpc AddWriter(AddWriterRequest) returns (AddWriterResponse) {}
 }
 
 message CreateRoomRequest {
@@ -43,16 +42,6 @@ message DeleteRoomRequest {
 
 message DeleteRoomResponse {
 }
-
-message AddWriterRequest {
-  string room_id = 2;
-  repeated string proposed_ids = 1;
-}
-
-message AddWriterResponse {
-  string id = 1;
-}
-
 
 message DebugRequest {
   bytes b = 1;

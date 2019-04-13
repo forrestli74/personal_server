@@ -23,7 +23,7 @@ func (s *RoomServerSuite) TestSendsTick() {
 	setting := &tmp.RoomSetting{
 		TickSetting: &tmp.TickSetting{
 			Size:            uint32(size),
-			FrequencyMillis: 10,
+			FrequencyMillis: 1,
 		},
 	}
 	rs := NewRoomServer(setting)
@@ -31,8 +31,7 @@ func (s *RoomServerSuite) TestSendsTick() {
 	ch := rs.history.CreateChan(0)
 	rawCommand := <-ch
 	var actual tmp.Command
-	err := proto.Unmarshal(rawCommand, &actual)
-	assert.Nil(s.T(), err)
+	proto.Unmarshal(rawCommand, &actual)
 	seed := actual.GetTickCommand().GetRandomSeed()
 	assert.Equal(s.T(), len(seed), size)
 }
