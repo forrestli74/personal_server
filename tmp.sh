@@ -1,6 +1,6 @@
 curl --insecure \
      --request "POST" \
-     --location "http://localhost:8080/twirp/tmp.RoomService/CreateRoom" \
+     --location "http://35.203.149.76:8080/twirp/tmp.RoomService/CreateRoom" \
      --header "Content-Type:application/json" \
      --data '{"room_id": "room"}' \
      --verbose

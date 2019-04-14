@@ -111,6 +111,26 @@ func (s *RoomServerClientSuite) TestSendsIdCommandOnLeave() {
 	})
 }
 
+func (s *RoomServerClientSuite) TestCanJoinAfterLeave() {
+	id := "test"
+	ws1, _, _ := s.AddAndConnectID(id)
+	ws1.Close()
+	ch := s.rs.history.CreateChan(1) //wait for it to close
+	<-ch
+	s.AddAndConnectID(id)
+	rawCommand := <-ch
+	actual := new(tmp.Command)
+	proto.Unmarshal(rawCommand, actual)
+
+	assertProtoEqual(s.T(), actual, &tmp.Command{
+		Command: &tmp.Command_IdCommand{
+			IdCommand: &tmp.IdCommand{
+				NewId: id,
+			},
+		},
+	})
+}
+
 func (s *RoomServerClientSuite) TestForwardsCommandToEveryone() {
 	id1 := "test1"
 	id2 := "test2"

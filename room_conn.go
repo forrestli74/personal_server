@@ -28,15 +28,18 @@ type RoomConn struct {
 Close ...
 */
 func (rc *RoomConn) Close() {
-	rc.state.ws.Close()
-	if rc.id != "" {
-		rc.rs.appendRawCommand(&tmp.Command{
-			Command: &tmp.Command_IdCommand{
-				IdCommand: &tmp.IdCommand{
-					OldId: rc.id,
+	if rc.state.ws != nil {
+		rc.state.ws.Close()
+		if rc.id != "" {
+			rc.rs.appendRawCommand(&tmp.Command{
+				Command: &tmp.Command_IdCommand{
+					IdCommand: &tmp.IdCommand{
+						OldId: rc.id,
+					},
 				},
-			},
-		})
+			})
+		}
+		rc.state.ws = nil
 	}
 }
 
@@ -45,7 +48,8 @@ Connect ...
 */
 func (rc *RoomConn) Connect(w http.ResponseWriter, r *http.Request) error {
 	if rc.state.ws != nil {
-		http.Error(w, "Id not found", http.StatusBadRequest)
+		http.Error(w, "Already connected by someone else", http.StatusBadRequest)
+		return nil
 	}
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
