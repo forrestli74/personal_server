@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -34,8 +35,8 @@ type RoomServerClientSuite struct {
 	dialer *websocket.Dialer
 }
 
-func (s *RoomServerClientSuite) AddAndConnectID(id string) (*websocket.Conn, *http.Response, error) {
-	url := makeWsProto(s.server.URL + "?id=" + id)
+func (s *RoomServerClientSuite) AddAndConnectID(id string, index int) (*websocket.Conn, *http.Response, error) {
+	url := makeWsProto(s.server.URL + "?id=" + id + "&index=" + strconv.Itoa(index))
 	return s.dialer.Dial(url, nil)
 }
 
@@ -51,18 +52,18 @@ func (s *RoomServerClientSuite) TearDownTest() {
 }
 
 func (s *RoomServerClientSuite) TestIgnoresWriteWhenMissingId() {
-	ws, _, _ := s.AddAndConnectID("")
+	ws, _, _ := s.AddAndConnectID("", 0)
 	message := []byte("hello")
 	ws.WriteMessage(websocket.BinaryMessage, message)
 
 	id := "id"
-	s.AddAndConnectID(id)
+	s.AddAndConnectID(id, 0)
 
 	_, wsMessage, _ := ws.ReadMessage()
 
-	actual := new(tmp.Command)
+	actual := new(tmp.Commands)
 	proto.Unmarshal(wsMessage, actual)
-	assertProtoEqual(s.T(), actual, &tmp.Command{
+	assertProtoEqual(s.T(), actual.Commands[0], &tmp.Command{
 		Command: &tmp.Command_IdCommand{
 			IdCommand: &tmp.IdCommand{
 				NewId: id,
@@ -80,12 +81,12 @@ func (s *RoomServerClientSuite) TestGet400WhenIdExists() {
 
 func (s *RoomServerClientSuite) TestSendsIdCommandOnJoin() {
 	id := "test"
-	ws, _, _ := s.AddAndConnectID(id)
+	ws, _, _ := s.AddAndConnectID(id, 0)
 	_, wsMessage, _ := ws.ReadMessage()
-	actual := new(tmp.Command)
+	actual := new(tmp.Commands)
 	proto.Unmarshal(wsMessage, actual)
 
-	assertProtoEqual(s.T(), actual, &tmp.Command{
+	assertProtoEqual(s.T(), actual.Commands[0], &tmp.Command{
 		Command: &tmp.Command_IdCommand{
 			IdCommand: &tmp.IdCommand{
 				NewId: id,
@@ -96,12 +97,10 @@ func (s *RoomServerClientSuite) TestSendsIdCommandOnJoin() {
 
 func (s *RoomServerClientSuite) TestSendsIdCommandOnLeave() {
 	id := "test"
-	ws, _, _ := s.AddAndConnectID(id)
+	ws, _, _ := s.AddAndConnectID(id, 0)
 	ws.Close()
-	rawCommand := <-s.rs.history.CreateChan(1)
-	actual := new(tmp.Command)
-	proto.Unmarshal(rawCommand, actual)
-
+	commands := <-s.rs.history.CreateChan(1)
+	actual := commands.Commands[0]
 	assertProtoEqual(s.T(), actual, &tmp.Command{
 		Command: &tmp.Command_IdCommand{
 			IdCommand: &tmp.IdCommand{
@@ -113,14 +112,13 @@ func (s *RoomServerClientSuite) TestSendsIdCommandOnLeave() {
 
 func (s *RoomServerClientSuite) TestCanJoinAfterLeave() {
 	id := "test"
-	ws1, _, _ := s.AddAndConnectID(id)
+	ws1, _, _ := s.AddAndConnectID(id, 0)
 	ws1.Close()
-	ch := s.rs.history.CreateChan(1) //wait for it to close
-	<-ch
-	s.AddAndConnectID(id)
-	rawCommand := <-ch
-	actual := new(tmp.Command)
-	proto.Unmarshal(rawCommand, actual)
+	ch := s.rs.history.CreateChan(1)
+	<-ch //wait for it to close
+	s.AddAndConnectID(id, 0)
+	commands := <-s.rs.history.CreateChan(2)
+	actual := commands.Commands[0]
 
 	assertProtoEqual(s.T(), actual, &tmp.Command{
 		Command: &tmp.Command_IdCommand{
@@ -134,25 +132,19 @@ func (s *RoomServerClientSuite) TestCanJoinAfterLeave() {
 func (s *RoomServerClientSuite) TestForwardsCommandToEveryone() {
 	id1 := "test1"
 	id2 := "test2"
-	ws1, _, _ := s.AddAndConnectID(id1)
-	ws2, _, _ := s.AddAndConnectID(id2)
+	ws1, _, _ := s.AddAndConnectID(id1, 2)
+	ws2, _, _ := s.AddAndConnectID(id2, 2)
 	message := []byte("hello")
 
 	ws1.WriteMessage(websocket.BinaryMessage, message)
-
-	// skip id command
-	ws1.ReadMessage()
-	ws2.ReadMessage()
-	ws1.ReadMessage()
-	ws2.ReadMessage()
 
 	_, wsMessage, _ := ws1.ReadMessage()
 	_, wsMessage2, _ := ws2.ReadMessage()
 
 	assert.Equal(s.T(), wsMessage, wsMessage2)
-	actual := new(tmp.Command)
+	actual := new(tmp.Commands)
 	proto.Unmarshal(wsMessage, actual)
-	assertProtoEqual(s.T(), actual, &tmp.Command{
+	assertProtoEqual(s.T(), actual.Commands[0], &tmp.Command{
 		Command: &tmp.Command_WriterCommand{
 			WriterCommand: &tmp.WriterCommand{
 				Id:      id1,

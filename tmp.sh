@@ -1,9 +1,16 @@
+URL="http://35.203.149.76:8080"
+# URL="http://localhost:8080"
 curl --insecure \
      --request "POST" \
-     --location "http://35.203.149.76:8080/twirp/tmp.RoomService/CreateRoom" \
+     --location "$URL/twirp/tmp.RoomService/DeleteRoom" \
      --header "Content-Type:application/json" \
-     --data '{"room_id": "room"}' \
-     --verbose
+     --data '{"room_id": "room"}'
+
+curl --insecure \
+     --request "POST" \
+     --location "$URL/twirp/tmp.RoomService/CreateRoom" \
+     --header "Content-Type:application/json" \
+     --data '{"room_id": "room", "room_setting": { "tick_setting": {"size": 1, "frequency_millis":400 }} }'
 
 # curl --insecure \
 #      --request "POST" \

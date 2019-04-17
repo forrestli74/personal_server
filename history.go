@@ -2,6 +2,9 @@ package main
 
 import (
 	"sync"
+
+	proto "github.com/golang/protobuf/proto"
+	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
 /*
@@ -18,8 +21,8 @@ type history struct {
 History ...
 */
 type History interface {
-	AppendCommand(command RawCommand)
-	CreateChan(index int) <-chan RawCommand
+	AppendCommand(command *tmp.Command)
+	CreateChan(index int) <-chan *tmp.Commands
 }
 
 /*
@@ -33,29 +36,36 @@ func CreateHistory() History {
 	return &h
 }
 
-func (h *history) AppendCommand(command RawCommand) {
-	h.commands = append(h.commands, command)
+func (h *history) AppendCommand(command *tmp.Command) {
+	raw, _ := proto.Marshal(command)
+	h.commands = append(h.commands, raw)
 	h.mutex.Unlock()
 	h.mutex = &sync.RWMutex{}
 	h.mutex.Lock()
 }
 
-func (h *history) CreateChan(index int) <-chan RawCommand {
-	out := make(chan RawCommand)
+func (h *history) CreateChan(index int) <-chan *tmp.Commands {
+	out := make(chan *tmp.Commands)
 	go func() {
+		for len(h.commands) <= index {
+			h.mutex.RLock()
+		}
 		for {
-			if index < len(h.commands) {
-				out <- h.commands[index]
+			commands := make([]*tmp.Command, 0, len(h.commands)-index)
+			for index < len(h.commands) {
+				command := new(tmp.Command)
+				proto.Unmarshal(h.commands[index], command)
+				commands = append(commands, command)
+
 				index++
-			} else {
-				h.mutex.RLock()
-				if index < len(h.commands) {
-					out <- h.commands[index]
-					index++
-				} else {
-					close(out)
-					break
-				}
+			}
+			out <- &tmp.Commands{
+				Commands: commands,
+			}
+			h.mutex.RLock()
+			if index == len(h.commands) {
+				close(out)
+				break
 			}
 		}
 	}()

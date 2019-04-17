@@ -3,9 +3,9 @@ package main
 import (
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
-	proto "github.com/golang/protobuf/proto"
 	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
@@ -42,8 +42,7 @@ func (rs *RoomServer) IsClosed() bool {
 }
 
 func (rs *RoomServer) appendRawCommand(command *tmp.Command) {
-	rawCommand, _ := proto.Marshal(command)
-	rs.history.AppendCommand(rawCommand)
+	rs.history.AppendCommand(command)
 }
 
 /*
@@ -85,7 +84,9 @@ type roomServerHandler struct {
 
 func (rsh roomServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
-	id := r.URL.Query().Get("id")
+	query := r.URL.Query()
+	id := query.Get("id")
+	index, _ := strconv.Atoi(query.Get("index"))
 	rc, ok := rsh.rs.connectionByID[id]
 	if id == "" {
 		rc = &RoomConn{rs: rsh.rs}
@@ -94,5 +95,5 @@ func (rsh roomServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rsh.rs.connectionByID[id] = rc
 	}
 
-	rc.Connect(w, r)
+	rc.Connect(w, r, index)
 }

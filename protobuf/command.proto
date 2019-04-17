@@ -1,5 +1,8 @@
 syntax = "proto3";
 package tmp;
+message Commands {
+  repeated Command commands = 1;
+}
 message Command {
   oneof command {
     TickCommand tick_command = 2;

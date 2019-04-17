@@ -1,12 +1,20 @@
 package main
 
 import (
-	"bytes"
 	"testing"
+
+	proto "github.com/golang/protobuf/proto"
+	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
-func stubCommand(x int) RawCommand{
-	return []byte{byte(x)}
+func stubCommand(x int) *tmp.Command {
+	return &tmp.Command{
+		Command: &tmp.Command_TickCommand{
+			TickCommand: &tmp.TickCommand{
+				RandomSeed: []byte{byte(x)},
+			},
+		},
+	}
 }
 
 const N = 20
@@ -18,14 +26,19 @@ func TestHistoryCreateChan_IterateAllCommand(t *testing.T) {
 		h.AppendCommand(stubCommand(i))
 	}
 	go func() {
-		for i := N/2; i < N; i++ {
+		for i := N / 2; i < N; i++ {
 			h.AppendCommand(stubCommand(i))
 		}
 	}()
 
-	for i := 0; i < N; i++ {
-		if(!bytes.Equal(<-ch, stubCommand(i))) {
-			t.Fatalf("%d'th Command is not expected: %s", i, <-ch)
+	i := 0
+	for i < N {
+		commands := <-ch
+		for _, command := range commands.Commands {
+			if !proto.Equal(command, stubCommand(i)) {
+				t.Fatalf("%d'th Command is not expected: %s", i, command)
+			}
+			i++
 		}
 	}
 
@@ -42,12 +55,16 @@ func TestHistory_CanCopy(t *testing.T) {
 			h2.AppendCommand(stubCommand(i))
 		}
 	}
-	
-	for i := 0; i < N; i++ {
-		if(!bytes.Equal(<-ch, stubCommand(i))) {
-			t.Fatalf("%d'th Command is not expected: %s", i, <-ch)
+
+	i := 0
+	for i < N {
+		commands := <-ch
+		for _, command := range commands.Commands {
+			if !proto.Equal(command, stubCommand(i)) {
+				t.Fatalf("%d'th Command is not expected: %s", i, command)
+			}
+			i++
 		}
 	}
-	
 
 }

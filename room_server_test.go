@@ -3,8 +3,6 @@ package main
 import (
 	"testing"
 
-	proto "github.com/golang/protobuf/proto"
-
 	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -29,9 +27,8 @@ func (s *RoomServerSuite) TestSendsTick() {
 	rs := NewRoomServer(setting)
 	defer rs.Close()
 	ch := rs.history.CreateChan(0)
-	rawCommand := <-ch
-	var actual tmp.Command
-	proto.Unmarshal(rawCommand, &actual)
+	commands := <-ch
+	actual := commands.Commands[0]
 	seed := actual.GetTickCommand().GetRandomSeed()
 	assert.Equal(s.T(), len(seed), size)
 }

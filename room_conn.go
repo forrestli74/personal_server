@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	proto "github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
@@ -46,7 +47,7 @@ func (rc *RoomConn) Close() {
 /*
 Connect ...
 */
-func (rc *RoomConn) Connect(w http.ResponseWriter, r *http.Request) error {
+func (rc *RoomConn) Connect(w http.ResponseWriter, r *http.Request, index int) error {
 	if rc.state.ws != nil {
 		http.Error(w, "Already connected by someone else", http.StatusBadRequest)
 		return nil
@@ -67,7 +68,7 @@ func (rc *RoomConn) Connect(w http.ResponseWriter, r *http.Request) error {
 		})
 	}
 
-	commandChan := rc.rs.history.CreateChan(0)
+	commandChan := rc.rs.history.CreateChan(index)
 
 	// write ws to history
 	if rc.id != "" {
@@ -93,8 +94,9 @@ func (rc *RoomConn) Connect(w http.ResponseWriter, r *http.Request) error {
 	// write history to ws
 	go func() {
 		defer rc.Close()
-		for command := range commandChan {
-			err := ws.WriteMessage(websocket.BinaryMessage, command)
+		for commands := range commandChan {
+			bytes, _ := proto.Marshal(commands)
+			err := ws.WriteMessage(websocket.BinaryMessage, bytes)
 			if err != nil {
 				break
 			}
