@@ -26,9 +26,9 @@ type History interface {
 }
 
 /*
-CreateHistory ...
+CreateHistory2 ...
 */
-func CreateHistory() History {
+func CreateHistory2() History {
 	h := history{
 		mutex: &sync.RWMutex{},
 	}
@@ -66,6 +66,55 @@ func (h *history) CreateChan(index int) <-chan *tmp.Commands {
 			if index == len(h.commands) {
 				close(out)
 				break
+			}
+		}
+	}()
+	return out
+}
+
+type history2 struct {
+	commands []*tmp.Command
+	ins      map[chan struct{}]struct{}
+	mutex    *sync.RWMutex
+	out      chan<- *tmp.Command
+}
+
+/*
+CreateHistory ...
+*/
+func CreateHistory() History {
+	out := make(chan *tmp.Command)
+	h := history2{
+		out:   out,
+		mutex: &sync.RWMutex{},
+		ins:   map[chan struct{}]struct{}{},
+	}
+	h.mutex.Lock()
+	return &h
+}
+
+func (h *history2) AppendCommand(command *tmp.Command) {
+	h.commands = append(h.commands, command)
+	m := h.mutex
+	h.mutex = &sync.RWMutex{}
+	h.mutex.Lock()
+	m.Unlock()
+}
+
+func (h *history2) CreateChan(index int) <-chan *tmp.Commands {
+	out := make(chan *tmp.Commands)
+
+	go func() {
+		for {
+			length := len(h.commands)
+			mutex := h.mutex
+			if index < length {
+				out <- &tmp.Commands{
+					Commands: h.commands[index:length],
+				}
+				index = length
+			} else {
+				mutex.RLock()
 			}
 		}
 	}()

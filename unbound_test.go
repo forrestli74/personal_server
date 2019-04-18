@@ -42,6 +42,7 @@ func Makelnfinite2() (chan<- interface{}, <-chan interface{}) {
 	var inQueue []interface{}
 	index := 0
 
+	// in to queue
 	go func() {
 		for in != nil {
 			v, ok := <-in
@@ -57,6 +58,7 @@ func Makelnfinite2() (chan<- interface{}, <-chan interface{}) {
 		}
 	}()
 
+	// queue to out
 	go func() {
 		for {
 			if index < len(inQueue) {
