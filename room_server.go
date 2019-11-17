@@ -55,13 +55,22 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 		setting:        setting,
 		closed:         false,
 	}
-	period := setting.GetTickSetting().GetFrequencyMillis()
+	period := setting.GetTick().GetFrequencyMillis()
+	duration := time.Duration(setting.GetEndOfLife().GetMaxDurationInSeconds() * 1000)
+	if duration == 0 {
+		duration = time.Duration(1000000000)
+	}
+	closeTime := time.Now().Add(duration)
 	if period != 0 {
 		ticker := time.NewTicker(time.Duration(period) * time.Millisecond)
 		go func() {
-			randomBuffer := make([]byte, setting.GetTickSetting().GetSize())
-			for range ticker.C {
-				if rs.closed {
+			randomBuffer := make([]byte, setting.GetTick().GetSize())
+			for tickTime := range ticker.C {
+				if tickTime.After(closeTime) {
+					rs.Close()
+					break
+				}
+				if rs.IsClosed() {
 					break
 				}
 				rand.Read(randomBuffer)

@@ -42,19 +42,19 @@ var upgrader = websocket.Upgrader{
 }
 
 /*
-haha
-*/
+ */
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if r.URL.Path != "/" {
-		http.Error(w, "Not found", http.StatusNotFound)
+		message := "Not Found.\nDo you mean this?\n" + tmp.RoomServicePathPrefix
+		http.Error(w, message, http.StatusNotFound)
 		return
 	}
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	http.ServeContent(w, r, "", time.Time{}, strings.NewReader("home.html"))
+	http.ServeContent(w, r, "", time.Time{}, strings.NewReader("It works!"))
 }
 
 func main() {
@@ -66,7 +66,7 @@ func main() {
 	mux.HandleFunc("/", serveHome)
 	mux.Handle(twirpHandler.PathPrefix(), twirpHandler)
 	mux.Handle("/ws", roomHub.GetHandler())
-	fmt.Printf("now serving %s\n", *addr)
+	log.Print(fmt.Sprintf("now serving %s\n", *addr))
 	if *useHTTPS {
 		log.Fatal(http.ListenAndServeTLS(*addr, "server.cert", "server.key", mux))
 	} else {

@@ -19,7 +19,7 @@ type RoomServerSuite struct {
 func (s *RoomServerSuite) TestSendsTick() {
 	size := 2
 	setting := &tmp.RoomSetting{
-		TickSetting: &tmp.TickSetting{
+		Tick: &tmp.TickSetting{
 			Size:            uint32(size),
 			FrequencyMillis: 1,
 		},
@@ -31,4 +31,22 @@ func (s *RoomServerSuite) TestSendsTick() {
 	actual := commands.Commands[0]
 	seed := actual.GetTickCommand().GetRandomSeed()
 	assert.Equal(s.T(), len(seed), size)
+}
+
+func (s *RoomServerSuite) TestStopsAfterMaxDuration() {
+	size := 2
+	setting := &tmp.RoomSetting{
+		Tick: &tmp.TickSetting{
+			Size:            uint32(size),
+			FrequencyMillis: 1,
+		},
+		EndOfLife: &tmp.EndOfLifeSetting{
+			MaxDurationInSeconds: uint32(1),
+		},
+	}
+	rs := NewRoomServer(setting)
+	defer rs.Close()
+	ch := rs.history.CreateChan(0)
+	_, closed := <-ch
+	assert.Equal(s.T(), closed, true)
 }

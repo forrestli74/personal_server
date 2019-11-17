@@ -1,27 +1,41 @@
 syntax = "proto3";
 package tmp;
+
 message Commands {
   repeated Command commands = 1;
 }
+/* a message that server can send to clients */
 message Command {
   oneof command {
-    TickCommand tick_command = 2;
-    IdCommand id_command = 3;
-    WriterCommand writer_command = 4;
+    TickCommand tick_command = 1;
+    IdCommand id_command = 2;
+    WriterCommand writer_command = 3;
   }
 }
 
+/** A time update, representing a unit time has passed. */
 message TickCommand {
   bytes random_seed = 1;
 }
 
+/**
+ * Client has connected or disconnected or changed id.
+ */
 message IdCommand {
+  /** Id that has been removed. If empty, it means a new client id has joined. */
   string old_id = 1;
+  /** Id that has been added. If empty, it means a client has disconnected. */
   string new_id = 2;
 }
 
+/**
+ * Broadcast of a message from a client.
+ */
 message WriterCommand {
+  /** Id of client */
   string id = 1;
+  
+  /** Custom message sent by a client. */
   bytes command = 2;
 }
 
@@ -69,13 +83,18 @@ message DebugResponse {
 }
 
 message RoomSetting {
-  TickSetting tick_setting = 1;
+  TickSetting tick = 1;
+  EndOfLifeSetting end_of_life = 2;
 }
 
 message TickSetting {
   // number of bytes
   uint32 size = 1;
   uint32 frequency_millis = 2;
+}
+
+message EndOfLifeSetting {
+  uint32 max_duration_in_seconds = 1;
 }
 
 /* message UpdateSetting { */

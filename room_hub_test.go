@@ -27,7 +27,7 @@ func (s *RoomHubSuite) TearDownTest() {
 func (s *RoomHubSuite) TestCreateRoomWorks() {
 	id := "id"
 	setting := &tmp.RoomSetting{
-		TickSetting: &tmp.TickSetting{
+		Tick: &tmp.TickSetting{
 			Size:            2,
 			FrequencyMillis: 10,
 		},
@@ -44,7 +44,7 @@ func (s *RoomHubSuite) TestCreateRoomWorks() {
 
 func (s *RoomHubSuite) TestCreateRoomWithEmptyRoomIdFails() {
 	setting := &tmp.RoomSetting{
-		TickSetting: &tmp.TickSetting{
+		Tick: &tmp.TickSetting{
 			Size:            2,
 			FrequencyMillis: 10,
 		},
@@ -62,7 +62,7 @@ func (s *RoomHubSuite) TestCreateRoomWithExistingRoomIdFails() {
 	})
 
 	setting := &tmp.RoomSetting{
-		TickSetting: &tmp.TickSetting{
+		Tick: &tmp.TickSetting{
 			Size:            2,
 			FrequencyMillis: 10,
 		},

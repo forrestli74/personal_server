@@ -23,6 +23,7 @@ History ...
 type History interface {
 	AppendCommand(command *tmp.Command)
 	CreateChan(index int) <-chan *tmp.Commands
+	Close()
 }
 
 /*
@@ -72,6 +73,10 @@ func (h *history) CreateChan(index int) <-chan *tmp.Commands {
 	return out
 }
 
+func (h *history) Close() {
+	h.mutex.Unlock()
+}
+
 type history2 struct {
 	commands []*tmp.Command
 	ins      map[chan struct{}]struct{}
@@ -119,4 +124,8 @@ func (h *history2) CreateChan(index int) <-chan *tmp.Commands {
 		}
 	}()
 	return out
+}
+
+func (h *history2) Close() {
+	h.mutex.Unlock()
 }
