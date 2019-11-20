@@ -28,8 +28,8 @@ func (s *RoomHubSuite) TestCreateRoomWorks() {
 	id := "id"
 	setting := &tmp.RoomSetting{
 		Tick: &tmp.TickSetting{
-			Size:            2,
-			FrequencyMillis: 10,
+			Size:                 2,
+			FrequencyNanoseconds: 1e7,
 		},
 	}
 	response, err := s.rh.CreateRoom(nil, &tmp.CreateRoomRequest{
@@ -45,8 +45,8 @@ func (s *RoomHubSuite) TestCreateRoomWorks() {
 func (s *RoomHubSuite) TestCreateRoomWithEmptyRoomIdFails() {
 	setting := &tmp.RoomSetting{
 		Tick: &tmp.TickSetting{
-			Size:            2,
-			FrequencyMillis: 10,
+			Size:                 2,
+			FrequencyNanoseconds: 1e7,
 		},
 	}
 	_, err := s.rh.CreateRoom(nil, &tmp.CreateRoomRequest{
@@ -63,8 +63,8 @@ func (s *RoomHubSuite) TestCreateRoomWithExistingRoomIdFails() {
 
 	setting := &tmp.RoomSetting{
 		Tick: &tmp.TickSetting{
-			Size:            2,
-			FrequencyMillis: 10,
+			Size:                 2,
+			FrequencyNanoseconds: 1e7,
 		},
 	}
 	_, err := s.rh.CreateRoom(nil, &tmp.CreateRoomRequest{

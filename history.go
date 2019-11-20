@@ -3,7 +3,6 @@ package main
 import (
 	"sync"
 
-	proto "github.com/golang/protobuf/proto"
 	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
@@ -26,84 +25,41 @@ type History interface {
 	Close()
 }
 
-/*
-CreateHistory2 ...
-*/
-func CreateHistory2() History {
-	h := history{
-		mutex: &sync.RWMutex{},
-	}
-	h.mutex.Lock()
-	return &h
-}
-
-func (h *history) AppendCommand(command *tmp.Command) {
-	raw, _ := proto.Marshal(command)
-	h.commands = append(h.commands, raw)
-	h.mutex.Unlock()
-	h.mutex = &sync.RWMutex{}
-	h.mutex.Lock()
-}
-
-func (h *history) CreateChan(index int) <-chan *tmp.Commands {
-	out := make(chan *tmp.Commands)
-	go func() {
-		for len(h.commands) <= index {
-			h.mutex.RLock()
-		}
-		for {
-			commands := make([]*tmp.Command, 0, len(h.commands)-index)
-			for index < len(h.commands) {
-				command := new(tmp.Command)
-				proto.Unmarshal(h.commands[index], command)
-				commands = append(commands, command)
-
-				index++
-			}
-			out <- &tmp.Commands{
-				Commands: commands,
-			}
-			h.mutex.RLock()
-			if index == len(h.commands) {
-				close(out)
-				break
-			}
-		}
-	}()
-	return out
-}
-
-func (h *history) Close() {
-	h.mutex.Unlock()
-}
-
 type history2 struct {
 	commands []*tmp.Command
-	ins      map[chan struct{}]struct{}
-	mutex    *sync.RWMutex
-	out      chan<- *tmp.Command
+	closed   bool
+	/** always locked, but will beunlocked once a new locked lock is assigned. */
+	rwLock *sync.RWMutex
+	/** lock that protects operation on the history itself. */
+	lock *sync.Mutex
 }
 
 /*
 CreateHistory ...
 */
 func CreateHistory() History {
-	out := make(chan *tmp.Command)
 	h := history2{
-		out:   out,
-		mutex: &sync.RWMutex{},
-		ins:   map[chan struct{}]struct{}{},
+		rwLock: &sync.RWMutex{},
+		lock:   &sync.Mutex{},
+		closed: false,
 	}
-	h.mutex.Lock()
+	h.rwLock.Lock()
 	return &h
 }
 
 func (h *history2) AppendCommand(command *tmp.Command) {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	if h.closed {
+		return
+	}
 	h.commands = append(h.commands, command)
-	m := h.mutex
-	h.mutex = &sync.RWMutex{}
-	h.mutex.Lock()
-	m.Unlock()
+	oldLock := h.rwLock
+	newLock := &sync.RWMutex{}
+	newLock.Lock()
+	h.rwLock = newLock
+	oldLock.Unlock()
 }
 
 func (h *history2) CreateChan(index int) <-chan *tmp.Commands {
@@ -111,8 +67,8 @@ func (h *history2) CreateChan(index int) <-chan *tmp.Commands {
 
 	go func() {
 		for {
+			mutex := h.rwLock
 			length := len(h.commands)
-			mutex := h.mutex
 			if index < length {
 				out <- &tmp.Commands{
 					Commands: h.commands[index:length],
@@ -120,6 +76,10 @@ func (h *history2) CreateChan(index int) <-chan *tmp.Commands {
 				index = length
 			} else {
 				mutex.RLock()
+				if h.closed {
+					close(out)
+					break
+				}
 			}
 		}
 	}()
@@ -127,5 +87,11 @@ func (h *history2) CreateChan(index int) <-chan *tmp.Commands {
 }
 
 func (h *history2) Close() {
-	h.mutex.Unlock()
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	if !h.closed {
+		h.closed = true
+		h.rwLock.Unlock()
+	}
 }

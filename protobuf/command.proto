@@ -90,11 +90,11 @@ message RoomSetting {
 message TickSetting {
   // number of bytes
   uint32 size = 1;
-  uint32 frequency_millis = 2;
+  uint64 frequency_nanoseconds = 2;
 }
 
 message EndOfLifeSetting {
-  uint32 max_duration_in_seconds = 1;
+  uint64 max_duration_in_nanoseconds = 1;
 }
 
 /* message UpdateSetting { */

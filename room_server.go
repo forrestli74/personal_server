@@ -32,6 +32,7 @@ Close ...
 */
 func (rs *RoomServer) Close() {
 	rs.closed = true
+	rs.history.Close()
 }
 
 /*
@@ -45,6 +46,8 @@ func (rs *RoomServer) appendRawCommand(command *tmp.Command) {
 	rs.history.AppendCommand(command)
 }
 
+const maxNanoSecondLife = 24 * 3600 * 10e9
+
 /*
 NewRoomServer ...
 */
@@ -55,14 +58,14 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 		setting:        setting,
 		closed:         false,
 	}
-	period := setting.GetTick().GetFrequencyMillis()
-	duration := time.Duration(setting.GetEndOfLife().GetMaxDurationInSeconds() * 1000)
+	period := setting.GetTick().GetFrequencyNanoseconds()
+	duration := time.Duration(setting.GetEndOfLife().GetMaxDurationInNanoseconds())
 	if duration == 0 {
-		duration = time.Duration(1000000000)
+		duration = time.Duration(maxNanoSecondLife)
 	}
 	closeTime := time.Now().Add(duration)
 	if period != 0 {
-		ticker := time.NewTicker(time.Duration(period) * time.Millisecond)
+		ticker := time.NewTicker(time.Duration(period) * time.Nanosecond)
 		go func() {
 			randomBuffer := make([]byte, setting.GetTick().GetSize())
 			for tickTime := range ticker.C {

@@ -47,8 +47,8 @@ func (s *RoomServerClientSuite) SetupTest() {
 }
 
 func (s *RoomServerClientSuite) TearDownTest() {
-	s.server.Close()
 	s.rs.Close()
+	s.server.Close()
 }
 
 func (s *RoomServerClientSuite) TestIgnoresWriteWhenMissingId() {
@@ -140,6 +140,12 @@ func (s *RoomServerClientSuite) TestForwardsCommandToEveryone() {
 
 	_, wsMessage, _ := ws1.ReadMessage()
 	_, wsMessage2, _ := ws2.ReadMessage()
+
+	commands1 := new(tmp.Commands)
+	commands2 := new(tmp.Commands)
+	proto.Unmarshal(wsMessage, commands1)
+	proto.Unmarshal(wsMessage2, commands2)
+	assertProtoEqual(s.T(), commands1, commands2)
 
 	assert.Equal(s.T(), wsMessage, wsMessage2)
 	actual := new(tmp.Commands)
