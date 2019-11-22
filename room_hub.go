@@ -13,7 +13,12 @@ RoomHub ...
 
 */
 type RoomHub struct {
-	roomByID map[string]*RoomServer
+	roomByID map[string]*room
+}
+
+type room struct {
+	server           *RoomServer
+	shortDescription string
 }
 
 /*
@@ -33,7 +38,10 @@ func (rh *RoomHub) CreateRoom(c context.Context, request *tmp.CreateRoomRequest)
 	if _, ok := rh.roomByID[request.RoomId]; ok {
 		return nil, fmt.Errorf("Room already exists: %s", request.RoomId)
 	}
-	rh.roomByID[request.RoomId] = NewRoomServer(request.RoomSetting)
+	rh.roomByID[request.RoomId] = &room{
+		server:           NewRoomServer(request.RoomSetting),
+		shortDescription: request.ShortDescription,
+	}
 	return new(tmp.CreateRoomResponse), nil
 }
 
@@ -41,20 +49,40 @@ func (rh *RoomHub) CreateRoom(c context.Context, request *tmp.CreateRoomRequest)
 DeleteRoom ...
 */
 func (rh *RoomHub) DeleteRoom(c context.Context, request *tmp.DeleteRoomRequest) (*tmp.DeleteRoomResponse, error) {
-	rs, ok := rh.roomByID[request.RoomId]
+	room, ok := rh.roomByID[request.RoomId]
 	if !ok {
 		return nil, fmt.Errorf("Room does not exist: %s", request.RoomId)
 	}
-	rs.Close()
+	room.server.Close()
 	delete(rh.roomByID, request.RoomId)
 	return new(tmp.DeleteRoomResponse), nil
 }
 
+/*
+ListRoom ...
+*/
+func (rh *RoomHub) ListRoom(c context.Context, request *tmp.ListRoomRequest) (*tmp.ListRoomResponse, error) {
+	var rooms []*tmp.RoomSummary
+	for k, v := range rh.roomByID {
+		rooms = append(rooms, &tmp.RoomSummary{
+			Id:               k,
+			Setting:          v.server.setting,
+			ShortDescription: v.shortDescription,
+		})
+	}
+	return &tmp.ListRoomResponse{
+		Rooms: rooms,
+	}, nil
+}
+
+/*
+Close ...
+*/
 func (rh *RoomHub) Close() {
 	for _, v := range rh.roomByID {
-		v.Close()
+		v.server.Close()
 	}
-	rh.roomByID = make(map[string]*RoomServer)
+	rh.roomByID = make(map[string]*room)
 }
 
 /*
@@ -69,7 +97,7 @@ NewRoomHub ...
 */
 func NewRoomHub() *RoomHub {
 	return &RoomHub{
-		roomByID: make(map[string]*RoomServer),
+		roomByID: make(map[string]*room),
 	}
 }
 
@@ -83,8 +111,8 @@ func (rhh roomHubHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing room_id", http.StatusBadRequest)
 		return
 	}
-	if rs, ok := rhh.rh.roomByID[roomID]; ok {
-		rs.GetHandler().ServeHTTP(w, r)
+	if room, ok := rhh.rh.roomByID[roomID]; ok {
+		room.server.GetHandler().ServeHTTP(w, r)
 	} else {
 		http.Error(w, "room_id not found", http.StatusBadRequest)
 	}

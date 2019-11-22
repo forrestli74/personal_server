@@ -39,7 +39,8 @@ func (s *RoomHubSuite) TestCreateRoomWorks() {
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), *response, tmp.CreateRoomResponse{})
 
-	assert.Equal(s.T(), s.rh.roomByID[id].setting, setting)
+	//assert.Equal(s.T(), s.rh.roomByID[id].setting, setting)
+	assert.Equal(s.T(), s.rh.roomByID[id].server.setting, setting)
 }
 
 func (s *RoomHubSuite) TestCreateRoomWithEmptyRoomIdFails() {
@@ -72,7 +73,8 @@ func (s *RoomHubSuite) TestCreateRoomWithExistingRoomIdFails() {
 		RoomSetting: setting,
 	})
 	assert.NotNil(s.T(), err)
-	assert.Nil(s.T(), s.rh.roomByID[id].setting)
+	//assert.Nil(s.T(), s.rh.roomByID[id].setting)
+	assert.Nil(s.T(), s.rh.roomByID[id].server.setting)
 }
 
 func (s *RoomHubSuite) TestDeleteRoomWorks() {
@@ -80,7 +82,7 @@ func (s *RoomHubSuite) TestDeleteRoomWorks() {
 	s.rh.CreateRoom(nil, &tmp.CreateRoomRequest{
 		RoomId: id,
 	})
-	rs := s.rh.roomByID[id]
+	rs := s.rh.roomByID[id].server
 
 	_, err := s.rh.DeleteRoom(nil, &tmp.DeleteRoomRequest{
 		RoomId: id,
@@ -88,4 +90,26 @@ func (s *RoomHubSuite) TestDeleteRoomWorks() {
 	assert.Nil(s.T(), err)
 	assert.Nil(s.T(), s.rh.roomByID[id])
 	assert.True(s.T(), rs.IsClosed())
+}
+
+func (s *RoomHubSuite) TestListRoomWorks() {
+	id := "id"
+	setting := &tmp.RoomSetting{
+		Tick: &tmp.TickSetting{
+			Size: 1,
+		},
+	}
+	description := "description"
+	s.rh.CreateRoom(nil, &tmp.CreateRoomRequest{
+		RoomId:           id,
+		ShortDescription: description,
+		RoomSetting:      setting,
+	})
+
+	response, err := s.rh.ListRoom(nil, nil)
+
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), response, &tmp.ListRoomResponse{
+		Rooms: []*tmp.RoomSummary{&tmp.RoomSummary{Id: id, Setting: setting, ShortDescription: description}},
+	})
 }
