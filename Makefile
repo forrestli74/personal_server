@@ -19,4 +19,4 @@ test: $(README)
 
 .PHONY: clean
 clean:
-	rm -f protobuf/*.pb.go
+	rm -f protobuf/*.go

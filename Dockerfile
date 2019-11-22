@@ -3,6 +3,8 @@ ARG repo_slug=lijiaqigreat/personal_server
 ENV CGO_ENABLED=0
 ENV BUILD_DIR=$GOPATH/src/github.com/$repo_slug
 
+RUN apt-get update && apt-get install unzip
+
 RUN mkdir -p $BUILD_DIR
 RUN ln -s $BUILD_DIR /build
 WORKDIR $BUILD_DIR
