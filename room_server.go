@@ -59,7 +59,7 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 		closed:         false,
 	}
 	period := setting.GetTick().GetFrequencyNanoseconds()
-	duration := time.Duration(setting.GetEndOfLife().GetMaxDurationInNanoseconds())
+	duration := time.Duration(setting.GetEndOfLife().GetMaxDuration())
 	if duration == 0 {
 		duration = time.Duration(maxNanoSecondLife)
 	}
