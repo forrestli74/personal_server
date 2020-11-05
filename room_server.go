@@ -18,6 +18,50 @@ type RoomServer struct {
 	connectionByID map[string]*RoomConn
 	history        History
 	closed         bool
+	createdAt      time.Time
+	closeCheckers  []RoomServerCloseChecker
+}
+
+/*
+RoomServerCloseChecker ...
+*/
+type RoomServerCloseChecker interface {
+	CheckClose(*RoomServer) bool
+}
+
+type maxDurationCloseChecker struct {
+	closeTime time.Time
+}
+
+func (c *maxDurationCloseChecker) CheckClose(rs *RoomServer) bool {
+	return time.Now().After(c.closeTime)
+}
+
+func newMaxDurationCloseChecker(rs *RoomServer) RoomServerCloseChecker {
+	duration := rs.setting.GetEndOfLife().GetMaxDurationInNanoseconds()
+	if duration == 0 {
+		return nil
+	}
+	return &maxDurationCloseChecker{closeTime: time.Now().Add(time.Duration(duration) * time.Nanosecond)}
+}
+
+type closeWhenWriterDisconnectedChecker struct {
+	connected bool
+}
+
+func (c *closeWhenWriterDisconnectedChecker) CheckClose(rs *RoomServer) bool {
+	if len(rs.connectionByID) == 0 {
+		return c.connected
+	}
+	c.connected = true
+	return false
+}
+
+func newCloseWhenWriterDisconnectedChecker(rs *RoomServer) RoomServerCloseChecker {
+	if rs.setting.GetEndOfLife().GetCloseWhenAllWriterDisconnected() {
+		return &closeWhenWriterDisconnectedChecker{}
+	}
+	return nil
 }
 
 /*
@@ -46,6 +90,10 @@ func (rs *RoomServer) appendRawCommand(command *tmp.Command) {
 	rs.history.AppendCommand(command)
 }
 
+func (rs *RoomServer) checkIfNeedClose() (needClose bool) {
+	return false
+}
+
 const maxNanoSecondLife = 24 * 3600 * 10e9
 
 /*
@@ -57,22 +105,16 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 		history:        CreateHistory(),
 		setting:        setting,
 		closed:         false,
+		closeCheckers:  []RoomServerCloseChecker{},
 	}
+	setupCloseCheckers(rs)
+
 	period := setting.GetTick().GetFrequencyNanoseconds()
-	duration := time.Duration(setting.GetEndOfLife().GetMaxDurationInNanoseconds())
-	if duration == 0 {
-		duration = time.Duration(maxNanoSecondLife)
-	}
-	closeTime := time.Now().Add(duration)
 	if period != 0 {
 		ticker := time.NewTicker(time.Duration(period) * time.Nanosecond)
 		go func() {
 			randomBuffer := make([]byte, setting.GetTick().GetSize())
-			for tickTime := range ticker.C {
-				if tickTime.After(closeTime) {
-					rs.Close()
-					break
-				}
+			for range ticker.C {
 				if rs.IsClosed() {
 					break
 				}
@@ -88,6 +130,19 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 		}()
 	}
 	return
+}
+
+func setupCloseCheckers(rs *RoomServer) {
+	var checker RoomServerCloseChecker
+
+	checker = newMaxDurationCloseChecker(rs)
+	if checker != nil {
+		rs.closeCheckers = append(rs.closeCheckers, checker)
+	}
+	checker = newCloseWhenWriterDisconnectedChecker(rs)
+	if checker != nil {
+		rs.closeCheckers = append(rs.closeCheckers, checker)
+	}
 }
 
 type roomServerHandler struct {

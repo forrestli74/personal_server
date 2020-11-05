@@ -114,6 +114,8 @@ message TickSetting {
 message EndOfLifeSetting {
   // Stop after n nanoseconds, never stop if equals 0
   uint64 max_duration_in_nanoseconds = 1;
+  // Stop after all writer disconnected.
+  bool close_when_all_writer_disconnected = 2;
 }
 
 /* message UpdateSetting { */

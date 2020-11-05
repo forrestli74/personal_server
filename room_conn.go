@@ -39,6 +39,7 @@ func (rc *RoomConn) Close() {
 					},
 				},
 			})
+			delete(rc.rs.connectionByID, rc.id)
 		}
 		rc.state.ws = nil
 	}
