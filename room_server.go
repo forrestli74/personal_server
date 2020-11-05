@@ -110,6 +110,11 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 	setupCloseCheckers(rs)
 
 	period := setting.GetTick().GetFrequencyNanoseconds()
+	duration := time.Duration(setting.GetEndOfLife().GetMaxDuration())
+	if duration == 0 {
+		duration = time.Duration(maxNanoSecondLife)
+	}
+	closeTime := time.Now().Add(duration)
 	if period != 0 {
 		ticker := time.NewTicker(time.Duration(period) * time.Nanosecond)
 		go func() {

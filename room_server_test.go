@@ -41,7 +41,7 @@ func (s *RoomServerSuite) TestStopsAfterMaxDuration() {
 			FrequencyNanoseconds: 1e7,
 		},
 		EndOfLife: &tmp.EndOfLifeSetting{
-			MaxDurationInNanoseconds: 1,
+			MaxDuration: 1,
 		},
 	}
 	rs := NewRoomServer(setting)
