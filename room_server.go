@@ -38,7 +38,7 @@ func (c *maxDurationCloseChecker) CheckClose(rs *RoomServer) bool {
 }
 
 func newMaxDurationCloseChecker(rs *RoomServer) RoomServerCloseChecker {
-	duration := rs.setting.GetEndOfLife().GetMaxDurationInNanoseconds()
+	duration := rs.setting.GetEndOfLife().GetMaxDuration()
 	if duration == 0 {
 		return nil
 	}
@@ -114,7 +114,7 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 	if duration == 0 {
 		duration = time.Duration(maxNanoSecondLife)
 	}
-	closeTime := time.Now().Add(duration)
+	// closeTime := time.Now().Add(duration)
 	if period != 0 {
 		ticker := time.NewTicker(time.Duration(period) * time.Nanosecond)
 		go func() {

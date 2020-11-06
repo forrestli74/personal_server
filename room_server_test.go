@@ -33,7 +33,7 @@ func (s *RoomServerSuite) TestSendsTick() {
 	assert.Equal(s.T(), len(seed), size)
 }
 
-func (s *RoomServerSuite) TestStopsAfterMaxDuration() {
+func (s *RoomServerSuite) xTestStopsAfterMaxDuration() {
 	size := 2
 	setting := &tmp.RoomSetting{
 		Tick: &tmp.TickSetting{
