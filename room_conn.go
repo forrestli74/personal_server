@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"sync"
 
 	proto "github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
@@ -12,25 +13,25 @@ import (
 RoomConnState ...
 */
 type RoomConnState struct {
-	ch <-chan []byte
-	ws *websocket.Conn
 }
 
 /*
 RoomConn ...
 */
 type RoomConn struct {
-	rs    *RoomServer
-	id    string
-	state RoomConnState
+	rs        *RoomServer
+	id        string
+	ch        <-chan []byte
+	ws        *websocket.Conn
+	closeOnce sync.Once
 }
 
 /*
 Close ...
 */
 func (rc *RoomConn) Close() {
-	if rc.state.ws != nil {
-		rc.state.ws.Close()
+	rc.closeOnce.Do(func() {
+		rc.ws.Close()
 		if rc.id != "" {
 			rc.rs.appendRawCommand(&tmp.Command{
 				Command: &tmp.Command_IdCommand{
@@ -41,34 +42,30 @@ func (rc *RoomConn) Close() {
 			})
 			delete(rc.rs.connectionByID, rc.id)
 		}
-		rc.state.ws = nil
-	}
+		rc.ws = nil
+	})
 }
 
-/*
-Connect ...
-*/
-func (rc *RoomConn) Connect(w http.ResponseWriter, r *http.Request, index int) error {
-	if rc.state.ws != nil {
-		http.Error(w, "Already connected by someone else", http.StatusBadRequest)
-		return nil
-	}
+func CreateRoomConn(w http.ResponseWriter, r *http.Request, rs *RoomServer, id string, index int) (*RoomConn, error) {
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	rc.state.ws = ws
+	rc := &RoomConn{rs: rs, id: id, ws: ws}
 
-	if rc.id != "" {
-		rc.rs.appendRawCommand(&tmp.Command{
+	if id != "" {
+		rs.connectionByID[id] = rc
+		rs.appendRawCommand(&tmp.Command{
 			Command: &tmp.Command_IdCommand{
 				IdCommand: &tmp.IdCommand{
-					NewId: rc.id,
+					NewId: id,
 				},
 			},
 		})
 	}
 
+	// handle command communication.
 	commandChan := rc.rs.history.CreateChan(index)
 
 	// write ws to history
@@ -104,5 +101,5 @@ func (rc *RoomConn) Connect(w http.ResponseWriter, r *http.Request, index int) e
 		}
 	}()
 
-	return nil
+	return rc, nil
 }

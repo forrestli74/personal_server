@@ -28,7 +28,7 @@ type History interface {
 type history2 struct {
 	commands []*tmp.Command
 	closed   bool
-	/** always locked, but will beunlocked once a new locked lock is assigned. */
+	/** always locked, but will be unlocked once a new locked lock is assigned. */
 	rwLock *sync.RWMutex
 	/** lock that protects operation on the history itself. */
 	lock *sync.Mutex

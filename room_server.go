@@ -159,13 +159,10 @@ func (rsh roomServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	id := query.Get("id")
 	index, _ := strconv.Atoi(query.Get("index"))
-	rc, ok := rsh.rs.connectionByID[id]
-	if id == "" {
-		rc = &RoomConn{rs: rsh.rs}
-	} else if !ok {
-		rc = &RoomConn{rs: rsh.rs, id: id}
-		rsh.rs.connectionByID[id] = rc
+	_, ok := rsh.rs.connectionByID[id]
+	if ok {
+		http.Error(w, "Already connected by someone else", http.StatusBadRequest)
 	}
 
-	rc.Connect(w, r, index)
+	CreateRoomConn(w, r, rsh.rs, id, index)
 }
