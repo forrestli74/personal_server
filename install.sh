@@ -7,4 +7,4 @@ unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
 rm -f $PROTOC_ZIP
 
 # TODO
-ln -s ~/git/personal_server ~/go/src/github.com/lijiaqigreat/personal_server
+# ln -s ~/git/personal_server ~/go/src/github.com/lijiaqigreat/personal_server
