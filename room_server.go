@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	tmp "github.com/lijiaqigreat/personal_server/protobuf"
@@ -11,57 +12,105 @@ import (
 
 /*
 RoomServer ...
-
 */
 type RoomServer struct {
 	setting        *tmp.RoomSetting
 	connectionByID map[string]*RoomConn
 	history        History
 	closed         bool
-	createdAt      time.Time
-	closeCheckers  []RoomServerCloseChecker
+	observers      []chan<- *tmp.Command
+	closeObservers []chan<- string
+	closeOnce      sync.Once
 }
 
 /*
-RoomServerCloseChecker ...
+AddObserver ...
 */
-type RoomServerCloseChecker interface {
-	CheckClose(*RoomServer) bool
+func (rs *RoomServer) AddObserver() <-chan *tmp.Command {
+	ch := make(chan *tmp.Command)
+	rs.observers = append(rs.observers, ch)
+	return ch
 }
 
-type maxDurationCloseChecker struct {
-	closeTime time.Time
+/*
+AddCloseObserver ...
+*/
+func (rs *RoomServer) AddCloseObserver() <-chan string {
+	ch := make(chan string)
+	rs.closeObservers = append(rs.closeObservers, ch)
+	return ch
 }
 
-func (c *maxDurationCloseChecker) CheckClose(rs *RoomServer) bool {
-	return time.Now().After(c.closeTime)
-}
-
-func newMaxDurationCloseChecker(rs *RoomServer) RoomServerCloseChecker {
+func (rs *RoomServer) setupMaxDurationCheck() {
 	duration := rs.setting.GetEndOfLife().GetMaxDuration()
 	if duration == 0 {
-		return nil
+		return
 	}
-	return &maxDurationCloseChecker{closeTime: time.Now().Add(time.Duration(duration) * time.Nanosecond)}
+	timer := time.NewTimer(time.Duration(duration))
+	closed := rs.AddCloseObserver()
+	select {
+	case <-timer.C:
+		rs.Close()
+		<-closed
+	case <-closed:
+		timer.Stop()
+		rs.Close()
+	}
 }
 
-type closeWhenWriterDisconnectedChecker struct {
-	connected bool
+func (rs *RoomServer) setupCloseWhenEmptyCheck() {
+	if !rs.setting.GetEndOfLife().GetCloseWhenAllWriterDisconnected() {
+		return
+	}
+	connected := false
+	ch := rs.AddObserver()
+	go func() {
+		for range ch {
+			if len(rs.connectionByID) != 0 {
+				connected = true
+				continue
+			}
+			if !connected {
+				continue
+			}
+			break
+		}
+		rs.Close()
+	}()
 }
 
-func (c *closeWhenWriterDisconnectedChecker) CheckClose(rs *RoomServer) bool {
-	if len(rs.connectionByID) == 0 {
-		return c.connected
+func (rs *RoomServer) setupTicker() {
+	period := rs.setting.GetTick().GetFrequencyNanoseconds()
+	if period == 0 {
+		return
 	}
-	c.connected = true
-	return false
-}
+	ticker := time.NewTicker(time.Duration(period) * time.Nanosecond)
+	closed := rs.AddCloseObserver()
+	go func() {
+		<-closed
+		ticker.Stop()
+	}()
+	size := rs.setting.GetTick().GetSize()
+	alwaysActive := rs.setting.GetTick().GetAlwaysActive()
 
-func newCloseWhenWriterDisconnectedChecker(rs *RoomServer) RoomServerCloseChecker {
-	if rs.setting.GetEndOfLife().GetCloseWhenAllWriterDisconnected() {
-		return &closeWhenWriterDisconnectedChecker{}
-	}
-	return nil
+	go func() {
+		randomBuffer := make([]byte, size)
+		for range ticker.C {
+			if rs.IsClosed() {
+				break
+			}
+			if alwaysActive || (len(rs.connectionByID) > 0) {
+				rand.Read(randomBuffer)
+				rs.appendRawCommand(&tmp.Command{
+					Command: &tmp.Command_TickCommand{
+						TickCommand: &tmp.TickCommand{
+							RandomSeed: randomBuffer,
+						},
+					},
+				})
+			}
+		}
+	}()
 }
 
 /*
@@ -75,8 +124,17 @@ func (rs *RoomServer) GetHandler() http.Handler {
 Close ...
 */
 func (rs *RoomServer) Close() {
-	rs.closed = true
-	rs.history.Close()
+	rs.closeOnce.Do(func() {
+		rs.closed = true
+		for _, ch := range rs.observers {
+			close(ch)
+		}
+		for _, ch := range rs.closeObservers {
+			close(ch)
+		}
+
+		rs.history.Close()
+	})
 }
 
 /*
@@ -88,13 +146,10 @@ func (rs *RoomServer) IsClosed() bool {
 
 func (rs *RoomServer) appendRawCommand(command *tmp.Command) {
 	rs.history.AppendCommand(command)
+	for _, ch := range rs.observers {
+		ch <- command
+	}
 }
-
-func (rs *RoomServer) checkIfNeedClose() (needClose bool) {
-	return false
-}
-
-const maxNanoSecondLife = 24 * 3600 * 10e9
 
 /*
 NewRoomServer ...
@@ -104,50 +159,13 @@ func NewRoomServer(setting *tmp.RoomSetting) (rs *RoomServer) {
 		connectionByID: make(map[string]*RoomConn),
 		history:        CreateHistory(),
 		setting:        setting,
-		closed:         false,
-		closeCheckers:  []RoomServerCloseChecker{},
 	}
-	setupCloseCheckers(rs)
+	// setupCloseCheckers(rs)
 
-	period := setting.GetTick().GetFrequencyNanoseconds()
-	duration := time.Duration(setting.GetEndOfLife().GetMaxDuration())
-	if duration == 0 {
-		duration = time.Duration(maxNanoSecondLife)
-	}
-	// closeTime := time.Now().Add(duration)
-	if period != 0 {
-		ticker := time.NewTicker(time.Duration(period) * time.Nanosecond)
-		go func() {
-			randomBuffer := make([]byte, setting.GetTick().GetSize())
-			for range ticker.C {
-				if rs.IsClosed() {
-					break
-				}
-				rand.Read(randomBuffer)
-				rs.appendRawCommand(&tmp.Command{
-					Command: &tmp.Command_TickCommand{
-						TickCommand: &tmp.TickCommand{
-							RandomSeed: randomBuffer,
-						},
-					},
-				})
-			}
-		}()
-	}
+	rs.setupCloseWhenEmptyCheck()
+	rs.setupMaxDurationCheck()
+	rs.setupTicker()
 	return
-}
-
-func setupCloseCheckers(rs *RoomServer) {
-	var checker RoomServerCloseChecker
-
-	checker = newMaxDurationCloseChecker(rs)
-	if checker != nil {
-		rs.closeCheckers = append(rs.closeCheckers, checker)
-	}
-	checker = newCloseWhenWriterDisconnectedChecker(rs)
-	if checker != nil {
-		rs.closeCheckers = append(rs.closeCheckers, checker)
-	}
 }
 
 type roomServerHandler struct {

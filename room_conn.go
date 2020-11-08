@@ -33,6 +33,7 @@ func (rc *RoomConn) Close() {
 	rc.closeOnce.Do(func() {
 		rc.ws.Close()
 		if rc.id != "" {
+			delete(rc.rs.connectionByID, rc.id)
 			rc.rs.appendRawCommand(&tmp.Command{
 				Command: &tmp.Command_IdCommand{
 					IdCommand: &tmp.IdCommand{
@@ -40,12 +41,14 @@ func (rc *RoomConn) Close() {
 					},
 				},
 			})
-			delete(rc.rs.connectionByID, rc.id)
 		}
 		rc.ws = nil
 	})
 }
 
+/**
+CreateRoomConn ...
+*/
 func CreateRoomConn(w http.ResponseWriter, r *http.Request, rs *RoomServer, id string, index int) (*RoomConn, error) {
 
 	ws, err := upgrader.Upgrade(w, r, nil)

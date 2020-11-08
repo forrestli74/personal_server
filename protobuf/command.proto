@@ -81,6 +81,13 @@ message RoomSummary {
   string id = 1;
   RoomSetting setting = 2;
   string short_description = 3;
+  message HistorySummary {
+    int32 active_connection_size = 4;
+    int64 command_size = 5;
+    int64 command_memory_size = 6;
+    int64 tick_size = 7;
+  }
+  HistorySummary history_summary = 4;
 }
 
 message DebugRequest {
@@ -116,6 +123,7 @@ message TickSetting {
   // number of bytes in random_seed in TickCommand
   uint32 size = 1;
   uint64 frequency_nanoseconds = 2;
+  bool always_active = 3;
 }
 
 // When server should stop

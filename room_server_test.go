@@ -22,6 +22,7 @@ func (s *RoomServerSuite) TestSendsTick() {
 		Tick: &tmp.TickSetting{
 			Size:                 uint32(size),
 			FrequencyNanoseconds: 1000,
+			AlwaysActive:         true,
 		},
 	}
 	rs := NewRoomServer(setting)
@@ -33,12 +34,13 @@ func (s *RoomServerSuite) TestSendsTick() {
 	assert.Equal(s.T(), len(seed), size)
 }
 
-func (s *RoomServerSuite) xTestStopsAfterMaxDuration() {
+func (s *RoomServerSuite) TestStopsAfterMaxDuration() {
 	size := 2
 	setting := &tmp.RoomSetting{
 		Tick: &tmp.TickSetting{
 			Size:                 uint32(size),
 			FrequencyNanoseconds: 1e7,
+			AlwaysActive:         true,
 		},
 		EndOfLife: &tmp.EndOfLifeSetting{
 			MaxDuration: 1,
@@ -47,6 +49,6 @@ func (s *RoomServerSuite) xTestStopsAfterMaxDuration() {
 	rs := NewRoomServer(setting)
 	defer rs.Close()
 	ch := rs.history.CreateChan(0)
-	_, closed := <-ch
-	assert.False(s.T(), closed)
+	_, ok := <-ch
+	assert.False(s.T(), ok)
 }
