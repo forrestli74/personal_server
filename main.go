@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	addr     = flag.String("addr", ":8080", "http service address")
-	useHTTPS = flag.Bool("https", false, "whether to use https")
+	keyLocation  = flag.String("key", "", "path for key file, empty for no tls")
+	certLocation = flag.String("cert", "", "path for cert file, empty for no tls")
+	addr         = flag.String("addr", ":80", "http service address, ignored when certLocation not empty")
 )
 
 const (
@@ -66,10 +67,11 @@ func main() {
 	mux.HandleFunc("/", serveHome)
 	mux.Handle(twirpHandler.PathPrefix(), twirpHandler)
 	mux.Handle("/ws", roomHub.GetHandler())
-	log.Print(fmt.Sprintf("now serving %s\n", *addr))
-	if *useHTTPS {
-		log.Fatal(http.ListenAndServeTLS(*addr, "server.cert", "server.key", mux))
+	if *certLocation != "" {
+		log.Print(fmt.Sprintf("now serving :443\n"))
+		log.Fatal(http.ListenAndServeTLS(":443", *certLocation, *keyLocation, mux))
 	} else {
+		log.Print(fmt.Sprintf("now serving %s\n", *addr))
 		log.Fatal(http.ListenAndServe(*addr, mux))
 	}
 }

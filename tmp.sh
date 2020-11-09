@@ -1,4 +1,4 @@
-URL="http://35.203.149.76:8080"
+URL="https://localhost"
 # URL="http://localhost:8080"
 curl --insecure \
      --request "POST" \

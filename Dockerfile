@@ -25,4 +25,4 @@ COPY --from=builder /build/main /app/
 COPY --from=builder /build/server.key /app/
 COPY --from=builder /build/server.cert /app/
 WORKDIR /app
-CMD ["./main"]
+ENTRYPOINT ["./main"]
