@@ -9,6 +9,6 @@
     "settings": {
         "go.useLanguageServer": true
     },
-    "postCreateCommand": "go mod download",
+    "postCreateCommand": "cd api && go mod download && cd ../web && sh install.sh && cd ../",
     "runArgs": []
 }

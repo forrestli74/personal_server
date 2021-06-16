@@ -63,14 +63,15 @@ func main() {
 	server := grpc.NewServer()
 	roomHub := NewRoomHub()
 	tmp.RegisterRoomServiceServer(server, roomHub)
-	wrappedGrpc := grpcweb.WrapServer(server)
+	wrappedGrpc := grpcweb.WrapServer(server,
+		//grpcweb.WithOriginFunc(func(origin string) bool { return true }),
+		grpcweb.WithOriginFunc(func(origin string) bool {
+			return true
+		}),
+	)
 	tlsHttpServer := http.NewServeMux()
 	tlsHttpServer.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-		//if wrappedGrpc.IsGrpcWebRequest(req) {
-		//wrappedGrpc.ServeHTTP(resp, req)
-		wrappedGrpc.HandleGrpcWebRequest(resp, req)
-		// Fall back to other servers.
-		//http.DefaultServeMux.ServeHTTP(resp, req)
+		wrappedGrpc.ServeHTTP(resp, req)
 	})
 	http.ListenAndServe(*addr, tlsHttpServer)
 
