@@ -52,7 +52,7 @@ module.exports = {
     publicPath: '/',
   },
   resolve: {
-    extensions: [".ts", ".tsx", ".js"]
+    extensions: [".ts", ".tsx", ".js", ".ejs"]
   },
   module: {
     rules: [
@@ -63,9 +63,8 @@ module.exports = {
         ],
       },
       {
-        test: /\.ejs/i,
+        test: /\.ejs$/i,
         use: [
-          'html-loader',
           'ejs-compiled-loader',
         ],
       },

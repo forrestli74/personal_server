@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-
+	"google.golang.org/grpc/metadata"
 	tmp "github.com/lijiaqigreat/personal_server/protobuf"
 )
 
@@ -33,6 +33,8 @@ func (rh *RoomHub) Debug(c context.Context, request *tmp.DebugRequest) (*tmp.Deb
 CreateRoom ...
 */
 func (rh *RoomHub) CreateRoom(c context.Context, request *tmp.CreateRoomRequest) (*tmp.CreateRoomResponse, error) {
+	fmt.Println(c)
+	fmt.Println(metadata.FromIncomingContext(c))
 	if request.RoomId == "" {
 		return nil, fmt.Errorf("RoomId cannot be empty")
 	}

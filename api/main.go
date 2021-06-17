@@ -70,9 +70,12 @@ func main() {
 		}),
 	)
 	tlsHttpServer := http.NewServeMux()
+	/*
 	tlsHttpServer.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
 		wrappedGrpc.ServeHTTP(resp, req)
 	})
+	*/
+	tlsHttpServer.Handle("/", wrappedGrpc)
 	http.ListenAndServe(*addr, tlsHttpServer)
 
 	/*
