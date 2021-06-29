@@ -29,7 +29,7 @@ proto.tmp = require('./command_pb.js');
 proto.tmp.RoomServiceClient =
     function(hostname, credentials, options) {
   if (!options) options = {};
-  options['format'] = 'binary';
+  options['format'] = 'text';
 
   /**
    * @private @const {!grpc.web.GrpcWebClientBase} The client
@@ -55,7 +55,7 @@ proto.tmp.RoomServiceClient =
 proto.tmp.RoomServicePromiseClient =
     function(hostname, credentials, options) {
   if (!options) options = {};
-  options['format'] = 'binary';
+  options['format'] = 'text';
 
   /**
    * @private @const {!grpc.web.GrpcWebClientBase} The client

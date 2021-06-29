@@ -13,7 +13,7 @@ protobuf/%.pb.go: protobuf/%.proto
 	protoc \
 	--go_out=. --go-grpc_out=. \
 	--js_out=import_style=commonjs:. \
-	--grpc-web_out=import_style=commonjs+dts,mode=grpcweb:. \
+	--grpc-web_out=import_style=commonjs+dts,mode=grpcwebtext:. \
 	$<
 
 test: $(README)

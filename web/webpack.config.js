@@ -52,7 +52,7 @@ module.exports = {
     publicPath: '/',
   },
   resolve: {
-    extensions: [".ts", ".tsx", ".js", ".ejs"]
+    extensions: [".ts", ".tsx", ".js", ".ejs", ".proto"]
   },
   module: {
     rules: [

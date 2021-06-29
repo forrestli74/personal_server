@@ -18,7 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RoomServiceClient interface {
-	// rpc debug(DebugRequest) returns (DebugResponse) {}
+	Debug(ctx context.Context, opts ...grpc.CallOption) (RoomService_DebugClient, error)
 	ListRoom(ctx context.Context, in *ListRoomRequest, opts ...grpc.CallOption) (*ListRoomResponse, error)
 	CreateRoom(ctx context.Context, in *CreateRoomRequest, opts ...grpc.CallOption) (*CreateRoomResponse, error)
 	DeleteRoom(ctx context.Context, in *DeleteRoomRequest, opts ...grpc.CallOption) (*DeleteRoomResponse, error)
@@ -30,6 +30,37 @@ type roomServiceClient struct {
 
 func NewRoomServiceClient(cc grpc.ClientConnInterface) RoomServiceClient {
 	return &roomServiceClient{cc}
+}
+
+func (c *roomServiceClient) Debug(ctx context.Context, opts ...grpc.CallOption) (RoomService_DebugClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RoomService_ServiceDesc.Streams[0], "/tmp.RoomService/debug", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &roomServiceDebugClient{stream}
+	return x, nil
+}
+
+type RoomService_DebugClient interface {
+	Send(*DebugRequest) error
+	Recv() (*DebugResponse, error)
+	grpc.ClientStream
+}
+
+type roomServiceDebugClient struct {
+	grpc.ClientStream
+}
+
+func (x *roomServiceDebugClient) Send(m *DebugRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *roomServiceDebugClient) Recv() (*DebugResponse, error) {
+	m := new(DebugResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *roomServiceClient) ListRoom(ctx context.Context, in *ListRoomRequest, opts ...grpc.CallOption) (*ListRoomResponse, error) {
@@ -63,7 +94,7 @@ func (c *roomServiceClient) DeleteRoom(ctx context.Context, in *DeleteRoomReques
 // All implementations must embed UnimplementedRoomServiceServer
 // for forward compatibility
 type RoomServiceServer interface {
-	// rpc debug(DebugRequest) returns (DebugResponse) {}
+	Debug(RoomService_DebugServer) error
 	ListRoom(context.Context, *ListRoomRequest) (*ListRoomResponse, error)
 	CreateRoom(context.Context, *CreateRoomRequest) (*CreateRoomResponse, error)
 	DeleteRoom(context.Context, *DeleteRoomRequest) (*DeleteRoomResponse, error)
@@ -74,6 +105,9 @@ type RoomServiceServer interface {
 type UnimplementedRoomServiceServer struct {
 }
 
+func (UnimplementedRoomServiceServer) Debug(RoomService_DebugServer) error {
+	return status.Errorf(codes.Unimplemented, "method Debug not implemented")
+}
 func (UnimplementedRoomServiceServer) ListRoom(context.Context, *ListRoomRequest) (*ListRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRoom not implemented")
 }
@@ -94,6 +128,32 @@ type UnsafeRoomServiceServer interface {
 
 func RegisterRoomServiceServer(s grpc.ServiceRegistrar, srv RoomServiceServer) {
 	s.RegisterService(&RoomService_ServiceDesc, srv)
+}
+
+func _RoomService_Debug_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RoomServiceServer).Debug(&roomServiceDebugServer{stream})
+}
+
+type RoomService_DebugServer interface {
+	Send(*DebugResponse) error
+	Recv() (*DebugRequest, error)
+	grpc.ServerStream
+}
+
+type roomServiceDebugServer struct {
+	grpc.ServerStream
+}
+
+func (x *roomServiceDebugServer) Send(m *DebugResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *roomServiceDebugServer) Recv() (*DebugRequest, error) {
+	m := new(DebugRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _RoomService_ListRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -170,6 +230,13 @@ var RoomService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RoomService_DeleteRoom_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "debug",
+			Handler:       _RoomService_Debug_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "protobuf/command.proto",
 }

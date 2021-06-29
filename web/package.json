@@ -10,6 +10,8 @@
     "copypb": "cp -r ../api/protobuf/ src/"
   },
   "devDependencies": {
+    "@grpc/grpc-js": "^1.3.2",
+    "@improbable-eng/grpc-web": "^0.14.0",
     "@types/jquery": "^3.5.5",
     "clean-webpack-plugin": "^3.0.0",
     "copy-webpack-plugin": "^6.3.1",
@@ -22,8 +24,11 @@
     "html-loader": "^1.3.2",
     "html-webpack-plugin": "^4.5.0",
     "jquery": "^3.6.0",
+    "os-browserify": "^0.3.0",
+    "protobufjs": "^6.11.2",
     "sass": "^1.29.0",
     "sass-loader": "^10.1.0",
+    "stream-browserify": "^3.0.0",
     "ts-loader": "^8.0.11",
     "typescript": "^4.0.5",
     "underscore": "^1.11.0",

@@ -49,7 +49,7 @@ message StandAloneRoomServerSetting {
 }
 
 service RoomService {
-  /* rpc debug(DebugRequest) returns (DebugResponse) {} */
+  rpc debug(stream DebugRequest) returns (stream DebugResponse) {}
   rpc ListRoom(ListRoomRequest) returns (ListRoomResponse) {}
   rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse) {}
   rpc DeleteRoom(DeleteRoomRequest) returns (DeleteRoomResponse) {}
